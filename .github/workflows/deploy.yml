@@ -1,0 +1,231 @@
+name: 'OnlineJudge-CI-CD'
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+      - 'OnlineJudge/**'
+      - 'JudgeServer/**'
+      - 'docker-compose.yml'
+      - 'README.md'
+    branches:
+      - 'main'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  makeTagAndRelease:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.create_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  buildOnlineJudgeImage:
+    name: 'OnlineJudge 이미지 빌드 및 푸시'
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v2
+        
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+          
+      - name: 빌드 앤 푸시 OnlineJudge
+        uses: docker/build-push-action@v3
+        with:
+          context: ./OnlineJudge
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/onlinejudge:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/onlinejudge:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  buildJudgeServerImage:
+    name: 'JudgeServer 이미지 빌드 및 푸시'
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v2
+        
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+          
+      - name: 빌드 앤 푸시 JudgeServer
+        uses: docker/build-push-action@v3
+        with:
+          context: ./JudgeServer
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/judgeserver:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/judgeserver:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deployToServer:
+    name: '서버에 배포'
+    needs: [buildOnlineJudgeImage, buildJudgeServerImage]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate docker-compose.yml with updated image tags
+        run: |
+          cat > docker-compose.deploy.yml << EOF
+          version: '3'
+
+          services:
+            onlinejudge:
+              image: ghcr.io/${{ github.repository_owner }}/onlinejudge:latest
+              container_name: onlinejudge-instance
+              ports:
+                - "9050:8000"
+              volumes:
+                - onlinejudge-data:/data
+              environment:
+                - POSTGRES_HOST=host.docker.internal
+                - POSTGRES_PORT=5432
+                - POSTGRES_DB=onlinejudge
+                - POSTGRES_USER=myuser
+                - POSTGRES_PASSWORD=1234
+                - REDIS_HOST=host.docker.internal
+                - REDIS_PORT=6379
+                - MAX_WORKER_NUM=4
+                - JUDGE_SERVER_TOKEN=jdkeoakkxkk34kdak
+                - OJ_ENV=production
+              restart: always
+              healthcheck:
+                test: ["CMD", "python3", "/app/deploy/health_check.py"]
+                interval: 5s
+              extra_hosts:
+                - "host.docker.internal:host-gateway"
+
+            judge_server:
+              image: ghcr.io/${{ github.repository_owner }}/judgeserver:latest
+              read_only: true
+              cap_drop:
+                - SETPCAP
+                - MKNOD
+                - NET_BIND_SERVICE
+                - SYS_CHROOT
+                - SETFCAP
+                - FSETID
+              tmpfs:
+                - /tmp
+              volumes:
+                - ./data/test_case:/test_case:ro
+                - ./log:/log
+                - ./run:/judger
+              environment:
+                - BACKEND_URL=http://host.docker.internal:9050/api/judge_server_heartbeat
+                - SERVICE_URL=http://host.docker.internal:12358
+                - TOKEN=jdkeoakkxkk34kdak
+              ports:
+                - "0.0.0.0:12358:8080"
+              depends_on:
+                onlinejudge:
+                  condition: service_healthy
+              extra_hosts:
+                - "host.docker.internal:host-gateway"
+              restart: always
+
+          volumes:
+            onlinejudge-data:
+          EOF
+      
+      - name: Create zero downtime deploy script
+        run: |
+          cat > zero_downtime_deploy.py << EOF
+          #!/usr/bin/env python3
+          import os
+          import subprocess
+          import time
+          import requests
+          import sys
+
+          # 필요한 디렉토리 생성
+          os.makedirs('./data/test_case', exist_ok=True)
+          os.makedirs('./log', exist_ok=True)
+          os.makedirs('./run', exist_ok=True)
+
+          # GitHub에서 최신 docker-compose 파일 다운로드
+          subprocess.run([
+              'curl', '-o', 'docker-compose.yml',
+              'https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.deploy.yml'
+          ], check=True)
+
+          # 이미지 pull
+          subprocess.run(['docker', 'compose', 'pull'], check=True)
+
+          # 컨테이너 실행
+          subprocess.run(['docker', 'compose', 'up', '-d'], check=True)
+
+          print("Deployment completed successfully!")
+          EOF
+      
+      - name: Copy files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.deploy.yml,zero_downtime_deploy.py"
+          target: "/dockerProjects/onlinejudge"
+          
+      - name: SSH to server and deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /dockerProjects/onlinejudge
+            chmod +x zero_downtime_deploy.py
+            python3 zero_downtime_deploy.py
