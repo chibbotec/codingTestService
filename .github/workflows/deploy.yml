@@ -120,8 +120,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             mkdir -p /dockerProjects/chibbotec/coding_test_service
-            curl -o /dockerProjects/chibbotec/coding_test_service/zero_downtime_deploy.py https://raw.githubusercontent.com/chibbotec/ai_service/main/infraScript/zero_downtime_deploy.py 
-            curl -o /dockerProjects/chibbotec/coding_test_service/docker-compose.yml https://raw.githubusercontent.com/chibbotec/ai_service/main/infraScript/docker-compose.yml
+            curl -o /dockerProjects/chibbotec/coding_test_service/zero_downtime_deploy.py https://raw.githubusercontent.com/chibbotec/coding_test_service/main/infraScript/zero_downtime_deploy.py 
+            curl -o /dockerProjects/chibbotec/coding_test_service/docker-compose.yml https://raw.githubusercontent.com/chibbotec/coding_test_service/main/infraScript/docker-compose.yml
             chmod +x /dockerProjects/chibbotec/coding_test_service/zero_downtime_deploy.py
             chmod +x /dockerProjects/chibbotec/coding_test_service/docker-compose.yml
             python3 /dockerProjects/chibbotec/coding_test_service/zero_downtime_deploy.py
