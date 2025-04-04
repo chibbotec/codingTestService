@@ -30,12 +30,12 @@ def setup_directories():
 def pull_images():
     """GitHub Container Registry에서 최신 이미지를 가져옵니다."""
     print("OnlineJudge 이미지 가져오는 중...")
-    if not run_command("docker pull --pull always ghcr.io/chibbotec/onlinejudge:latest"):
+    if not run_command("docker pull ghcr.io/chibbotec/onlinejudge:latest"):
         print("OnlineJudge 이미지 가져오기 실패")
         return False
     
     print("JudgeServer 이미지 가져오는 중...")
-    if not run_command("docker pull --pull always ghcr.io/chibbotec/judgeserver:latest"):
+    if not run_command("docker pull ghcr.io/chibbotec/judgeserver:latest"):
         print("JudgeServer 이미지 가져오기 실패")
         return False
     

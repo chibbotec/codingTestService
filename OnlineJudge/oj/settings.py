@@ -167,7 +167,7 @@ LOGGING = {
        },
        'django.db.backends': {
            'handlers': LOGGING_HANDLERS,
-           'level': 'ERROR',
+           'level': 'DEBUG',  # 여기를 ERROR에서 DEBUG로 변경
            'propagate': True,
        },
         'dramatiq': {
@@ -175,9 +175,19 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+       'problem': {  # 문제 관련 앱에 대한 로깅 추가
+           'handlers': LOGGING_HANDLERS,
+           'level': 'DEBUG',
+           'propagate': False,
+       },
+       'submission': {  # 제출 관련 앱에 대한 로깅 추가
+           'handlers': LOGGING_HANDLERS,
+           'level': 'DEBUG',
+           'propagate': False,
+       },
        '': {
            'handlers': LOGGING_HANDLERS,
-           'level': 'WARNING',
+           'level': 'INFO',  # 여기를 WARNING에서 INFO로 변경
            'propagate': True,
        }
    },
