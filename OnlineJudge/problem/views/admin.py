@@ -35,16 +35,6 @@ from account.models import User
 import json
 import logging
 
-# 로거 설정을 재구성합니다
-logging.basicConfig(
-    level=logging.DEBUG,  # DEBUG 레벨로 설정
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)  # 표준 출력으로 로그 보내기
-    ]
-)
-        
-
 class TestCaseZipProcessor(object):
     def process_zip(self, uploaded_zip_file, spj, dir=""):
         try:

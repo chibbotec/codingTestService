@@ -48,13 +48,13 @@ def deploy_containers():
     os.chdir(BASE_DIR)
     
     print("컨테이너 배포 중...")
-    if not run_command("docker compose up -d"):
+    if not run_command("docker-compose up -d"):
         print("컨테이너 배포 실패")
         return False
     
     print("배포 상태 확인 중...")
     time.sleep(5)  # 컨테이너가 시작될 시간을 줍니다
-    run_command("docker compose ps")
+    # run_command("docker compose ps")
     
     print("컨테이너 배포 완료")
     return True

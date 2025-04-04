@@ -18,7 +18,7 @@ REDIS_CONF = {
 
 JUDGE_SERVER_TOKEN = get_env("JUDGE_SERVER_TOKEN", "jdkeoakkxkk34kdak")
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
