@@ -7,7 +7,7 @@ services:
     ports:
       - "9050:8000"
     volumes:
-      - /dockerProjects/chibbotec/coding_test_service/OnlineJudge:/data
+      - /dockerProjects/chibbotec/coding_test_service/OnlineJudge/data:/data
     environment:
       - POSTGRES_HOST=host.docker.internal
       - POSTGRES_PORT=5432
