@@ -70,7 +70,6 @@ jobs:
           context: ./OnlineJudge
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/onlinejudge:${{ needs.makeTagAndRelease.outputs.tag_name }},
             ghcr.io/${{ env.OWNER_LC }}/onlinejudge:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -104,7 +103,6 @@ jobs:
           context: ./JudgeServer
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/judgeserver:${{ needs.makeTagAndRelease.outputs.tag_name }},
             ghcr.io/${{ env.OWNER_LC }}/judgeserver:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
