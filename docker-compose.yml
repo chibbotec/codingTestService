@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  onlinejudge:
+    build:
+      context: ./OnlineJudge
+      dockerfile: Dockerfile
+    image: onlinejudge
+    container_name: onlinejudge-instance
+    ports:
+      - "9050:8000"
+    volumes:
+      - onlinejudge-data:/data
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=onlinejudge
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=1234
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6379
+      - MAX_WORKER_NUM=4
+      - JUDGE_SERVER_TOKEN=jdkeoakkxkk34kdak
+      - OJ_ENV=production
+    restart: always
+    healthcheck:
+      test: ["CMD", "python3", "/app/deploy/health_check.py"]
+      interval: 5s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  judge_server:
+    build:
+      context: ./JudgeServer
+    read_only: true
+    cap_drop:
+      - SETPCAP
+      - MKNOD
+      - NET_BIND_SERVICE
+      - SYS_CHROOT
+      - SETFCAP
+      - FSETID
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./OnlineJudge/data/test_case:/test_case:ro
+      - ./log:/log
+      - ./run:/judger
+    environment:
+      - BACKEND_URL=http://host.docker.internal:9050/api/judge_server_heartbeat
+      - SERVICE_URL=http://host.docker.internal:12358
+      - TOKEN=jdkeoakkxkk34kdak
+    ports:
+      - "0.0.0.0:12358:8080"
+    depends_on:
+      onlinejudge:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
+volumes:
+  onlinejudge-data:
