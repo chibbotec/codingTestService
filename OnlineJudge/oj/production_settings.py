@@ -18,6 +18,8 @@ REDIS_CONF = {
 
 JUDGE_SERVER_TOKEN = get_env("JUDGE_SERVER_TOKEN", "jdkeoakkxkk34kdak")
 
+SPACE_SERVICE_URL = get_env("SPACE_SERVICE_URL", "http://172.30.1.23:9030")
+
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
