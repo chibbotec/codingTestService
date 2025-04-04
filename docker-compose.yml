@@ -10,7 +10,7 @@ services:
     ports:
       - "9050:8000"
     volumes:
-      - onlinejudge-data:/data
+      - ./OnlineJudge/data:/data
     environment:
       - POSTGRES_HOST=host.docker.internal
       - POSTGRES_PORT=5432

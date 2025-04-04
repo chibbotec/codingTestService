@@ -35,6 +35,15 @@ from account.models import User
 import json
 import logging
 
+# 로거 설정을 재구성합니다
+logging.basicConfig(
+    level=logging.DEBUG,  # DEBUG 레벨로 설정
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # 표준 출력으로 로그 보내기
+    ]
+)
+
 class TestCaseZipProcessor(object):
     def process_zip(self, uploaded_zip_file, spj, dir=""):
         try:
@@ -149,8 +158,7 @@ class TestCaseAPI(CSRFExemptAPIView, TestCaseZipProcessor):
         return response
 
     def post(self, request, space_id=None):
-        print(f"TestCaseAPI.post 요청 받음: space_id={space_id}, user={request.user}")
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger("problem")
         logger.info(f"TestCaseAPI.post 요청 받음: space_id={space_id}, user={request.user}")
         form = TestCaseUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -315,9 +323,8 @@ class ProblemBase(APIView):
 class ProblemAPI(CSRFExemptAPIView, ProblemBase):
     @validate_serializer(CreateProblemSerializer)
     def post(self, request, space_id=None):
-        logger = logging.getLogger(__name__)
-        print("======================요청들어옴")
-
+        logger = logging.getLogger("problem")
+        logger.info(f"ProblemAPI.post 요청 받음: space_id={space_id}, user={request.user}")
         data = request.data
         _id = data["_id"]
         if not _id:
@@ -338,7 +345,6 @@ class ProblemAPI(CSRFExemptAPIView, ProblemBase):
         
         # API Gateway로부터 온 사용자 정보 확인
         user_id = request.headers.get("X-User-ID")
-        print(f"Request contains user info - ID: {user_id}")
         username = request.headers.get("X-Username")
 
         # todo check filename and score info

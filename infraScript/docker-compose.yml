@@ -7,7 +7,7 @@ services:
     ports:
       - "9050:8000"
     volumes:
-      - onlinejudge-data:/data
+      - /dockerProjects/chibbotec/coding_test_service/OnlineJudge:/data
     environment:
       - POSTGRES_HOST=host.docker.internal
       - POSTGRES_PORT=5432
@@ -39,9 +39,9 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - ./OnlineJudge/data/test_case:/test_case:ro
-      - ./log:/log
-      - ./run:/judger
+      - /dockerProjects/chibbotec/coding_test_service/OnlineJudge/data/test_case:/test_case:ro
+      - /dockerProjects/chibbotec/coding_test_service/JudgeServer/log:/log
+      - /dockerProjects/chibbotec/coding_test_service/JudgeServer/run:/judger
     environment:
       - BACKEND_URL=http://host.docker.internal:9050/api/judge_server_heartbeat
       - SERVICE_URL=http://host.docker.internal:12358

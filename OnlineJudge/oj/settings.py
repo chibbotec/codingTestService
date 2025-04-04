@@ -167,7 +167,7 @@ LOGGING = {
        },
        'django.db.backends': {
            'handlers': LOGGING_HANDLERS,
-           'level': 'DEBUG',  # 여기를 ERROR에서 DEBUG로 변경
+           'level': 'ERROR',  # 여기를 ERROR에서 DEBUG로 변경
            'propagate': True,
        },
         'dramatiq': {

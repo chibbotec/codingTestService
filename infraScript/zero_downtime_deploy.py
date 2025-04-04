@@ -17,13 +17,13 @@ def run_command(command):
 def setup_directories():
     """필요한 디렉토리 구조를 생성합니다."""
     print("필요한 디렉토리 생성 중...")
-    
+
     # OnlineJudge 관련 디렉토리
-    os.makedirs(f"{BASE_DIR}/OnlineJudge/data/test_case", exist_ok=True)
+    os.makedirs(f"{BASE_DIR}/OnlineJudge/data", exist_ok=True)
     
     # 로그 및 실행 디렉토리
-    os.makedirs(f"{BASE_DIR}/log", exist_ok=True)
-    os.makedirs(f"{BASE_DIR}/run", exist_ok=True)
+    os.makedirs(f"{BASE_DIR}/JudgeServer/log", exist_ok=True)
+    os.makedirs(f"{BASE_DIR}/JudgeServer/run", exist_ok=True)
     
     print("디렉토리 생성 완료")
 
